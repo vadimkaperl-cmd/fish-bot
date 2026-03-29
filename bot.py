@@ -40,7 +40,7 @@ ALLOWED_CHAT_IDS  = set(
 )
 
 # Колонка с которой начинаются количества товаров (колонка BC = 55)
-PRODUCTS_START_COL = 55
+PRODUCTS_START_COL = 5
 
 # ─── Google Sheets ────────────────────────────────────────────────────────────
 def get_spreadsheet():
