@@ -66,6 +66,20 @@ def get_products(sh) -> list[str]:
     return products
 
 
+def write_product_headers(sh, products: list[str]):
+    """
+    Записывает названия товаров в строку 1 листа Прием,
+    начиная с колонки E (5). Запускается при старте бота.
+    """
+    ws = sh.worksheet("Прием")
+    if not products:
+        return
+    col_start = rowcol_to_a1(1, 5)
+    col_end   = rowcol_to_a1(1, 5 + len(products) - 1)
+    ws.update(f"{col_start}:{col_end}", [products])
+    log.info(f"Заголовки товаров записаны в строку 1: {products}")
+
+
 def find_next_row(ws) -> int:
     """Находит первую пустую строку в листе Прием (начиная со строки 2)."""
     col_a = ws.col_values(1)  # колонка A (имя)
@@ -88,15 +102,19 @@ def write_order(sh, order: dict, products: list[str]) -> int:
     ws = sh.worksheet("Прием")
     row = find_next_row(ws)
 
-    # Основные данные: A, B, C
-    ws.update(f"A{row}:C{row}", [[
+    # Формируем текст заказа для колонки D
+    ordered = order.get("products", {})
+    order_text = ", ".join(f"{k} {v}шт" for k, v in ordered.items() if v)
+
+    # Основные данные: A, B, C, D
+    ws.update(f"A{row}:D{row}", [[
         order.get("name", ""),
         order.get("phone", ""),
         order.get("city", ""),
+        order_text,
     ]])
 
     # Количества товаров: колонки BC..DD (55..104)
-    ordered = order.get("products", {})
     qty_row = []
     for product_name in products:
         qty = ordered.get(product_name, "")
@@ -245,7 +263,15 @@ async def handle_message(message: Message):
 
 
 async def main():
-    log.info("Бот запущен. Таблица: Отличный Улов. Товары → Отчет!A. Прием → BC(55)+")
+    log.info("Бот запущен. Таблица: Отличный Улов. Товары → Отчет!A. Прием → E(5)+")
+    # При старте записываем заголовки товаров в строку 1 листа Прием
+    try:
+        sh = get_spreadsheet()
+        products = get_products(sh)
+        if products:
+            write_product_headers(sh, products)
+    except Exception as e:
+        log.error(f"Ошибка записи заголовков: {e}")
     await dp.start_polling(bot)
 
 
