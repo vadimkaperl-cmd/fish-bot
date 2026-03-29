@@ -66,18 +66,19 @@ def get_products(sh) -> list[str]:
     return products
 
 
-def write_product_headers(sh, products: list[str]):
+def write_product_headers(sh):
     """
-    Записывает названия товаров в строку 1 листа Прием,
-    начиная с колонки E (5). Запускается при старте бота.
+    Записывает формулы =Отчет!A1, =Отчет!A2... в строку 1 листа Прием
+    начиная с колонки E (5) до BB (54) — 50 позиций.
+    Запускается один раз при старте бота.
+    После этого заголовки обновляются автоматически при изменении Отчет!A.
     """
     ws = sh.worksheet("Прием")
-    if not products:
-        return
-    col_start = rowcol_to_a1(1, 5)
-    col_end   = rowcol_to_a1(1, 5 + len(products) - 1)
-    ws.update(f"{col_start}:{col_end}", [products])
-    log.info(f"Заголовки товаров записаны в строку 1: {products}")
+    formulas = [[f"=Отчет!A{i}" for i in range(1, 51)]]
+    col_start = rowcol_to_a1(1, 5)   # E1
+    col_end   = rowcol_to_a1(1, 54)  # BB1
+    ws.update(f"{col_start}:{col_end}", formulas, value_input_option="USER_ENTERED")
+    log.info("Формулы заголовков записаны в E1:BB1")
 
 
 def find_next_row(ws) -> int:
@@ -268,8 +269,7 @@ async def main():
     try:
         sh = get_spreadsheet()
         products = get_products(sh)
-        if products:
-            write_product_headers(sh, products)
+        write_product_headers(sh)
     except Exception as e:
         log.error(f"Ошибка записи заголовков: {e}")
     await dp.start_polling(bot)
